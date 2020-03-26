@@ -10,6 +10,7 @@ console.log('---')
 console.log(process.env.GITHUB_REPOSITORY)
 console.log(repoOwner)
 console.log(repoName)
+console.log(process.env.GITHUB_SHA)
 console.log('---')
 const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
@@ -43,7 +44,10 @@ async function run() {
     }
 
     for (const file of config.files) {
-      await writeStatus(file.name, file.path, 'pending', 'Checking...')
+      const out = await writeStatus(file.name, file.path, 'pending', 'Checking...')
+      console.log(">>>>>>>>>")
+      console.log(out)
+      console.log(">>>>>>>>>")
     }
 
     // Use the files from the new config but the build instructions fromm the old config if it exists
