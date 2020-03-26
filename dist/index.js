@@ -488,16 +488,51 @@ module.exports = require("os");
 /***/ 104:
 /***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
 
+const fs = __webpack_require__(747)
+const path = __webpack_require__(622)
 const core = __webpack_require__(470)
 const github = __webpack_require__(469)
 const getStats = __webpack_require__(858)
 
+const workspaceDir = process.env.GITHUB_WORKSPACE
+const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY.split('/')
+const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
+
+function writeStatus(name, filepath, description) {
+  const context = `Bundlesize: ${name} (${filepath})`
+  return octokit.repos.createStatus({
+    owner: repoOwner,
+    repo: repoName,
+    sha: process.env.GITHUB_SHA,
+    context: context,
+    description: description
+  })
+}
+
+function getConfig(workingDir) {
+  const pj = JSON.parse(fs.readFileSync(path.join(workingDir, 'package.json')))
+  return pj.actionBundlesize
+}
+
 async function run() {
   try {
-    const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
-    const oldStats = await getStats('old', true)
-    const newStats = await getStats('new')
+    const oldDir = path.join(workspaceDir, 'old')
+    const newDir = path.join(workspaceDir, 'new')
+
+    const oldConfig = getConfig(oldDir) || {}
+    const config = getConfig(newDir)
+    if (!config) {
+      throw new Error(`No config found in actionBundlesize key in package.json from ${newDir}`)
+    }
+
+    for (const file of config.files) {
+      await writeStatus(file.name, file.path, 'Checking...')
+    }
+
+    // Use the files from the new config but the build instructions fromm the old config
+    const oldStats = await getStats(Object.assign({}, config, {build: oldConfig.build}), oldDir)
+    const newStats = await getStats(config, newDir)
 
     const comparisons = Object.keys(newStats).map(path => {
       const next = newStats[path]
@@ -518,23 +553,8 @@ async function run() {
 
     console.log('Analysis done. Setting check statuses...')
     for (const comparison of comparisons) {
-      const name = `Bundlesize: ${comparison.name} (${comparison.path})`
-      // const signNormal = comparison.change.normal >= 0 ? '+' : ''
-      // const signGzipped = comparison.change.gzipped >= 0 ? '+' : ''
-
-      const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY.split('/')
-
-      await octokit.checks.create({
-        owner: repoOwner,
-        repo: repoName,
-        name: name,
-        head_sha: process.env.GITHUB_SHA,
-        conclusion: 'success',
-        output: {
-          title: name,
-          summary: `${comparison.old.normal} bytes -> ${comparison.new.normal} bytes (${comparison.old.gzppped} bytes -> ${comparison.new.gzipped} bytes gzipped)`
-        }
-      })
+      const result = `${comparison.old.normal} bytes -> ${comparison.new.normal} bytes (${comparison.old.gzppped} bytes -> ${comparison.new.gzipped} bytes gzipped)`
+      await writeStatus(comparison.name, comparison.path, result)
     }
   }
   catch (error) {
@@ -23473,23 +23493,8 @@ const path = __webpack_require__(622)
 const zlib = __webpack_require__(761)
 const cp = __webpack_require__(129)
 
-module.exports = async function getStats(subDir, skipNotFound = false) {
-  console.log(`Starting stat analysis for subdir ${subDir}`)
-  const workspaceDir = process.env.GITHUB_WORKSPACE
-  const workingDir = path.join(workspaceDir, subDir)
-  const pj = JSON.parse(fs.readFileSync(path.join(workingDir, 'package.json')))
-
-  const config = pj.actionBundlesize
-  if (!config) {
-    if (skipNotFound) {
-      console.log('No config found, skipping')
-      return {}
-    } else {
-      throw new Error(`No actionBundlesize config found in package.json in ${subDir}`)
-    }
-  }
-
-  console.log('Running build command...')
+module.exports = async function getStats(config, workingDir) {
+  console.log(`Starting stat analysis for ${workingDir}`)
   cp.execSync(config.build, {
     cwd: workingDir
   })
@@ -23518,10 +23523,18 @@ module.exports = async function getStats(subDir, skipNotFound = false) {
 }
 
 function getFileSizeInBytes(pathToFile) {
-  return fs.statSync(pathToFile).size
+  if (fs.existsSync(pathToFile)) {
+    return fs.statSync(pathToFile).size
+  } else {
+    return 0
+  }
 }
 
 async function getGzippedSizeInBytes(pathToFile) {
+  if (!fs.existsSync(pathToFile)) {
+    return 0
+  }
+
   const outFile = pathToFile + '.gz'
   const gzip = zlib.createGzip()
   const inp = fs.createReadStream(pathToFile)
