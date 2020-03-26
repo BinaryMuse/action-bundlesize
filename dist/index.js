@@ -498,13 +498,14 @@ const workspaceDir = process.env.GITHUB_WORKSPACE
 const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY.split('/')
 const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
-function writeStatus(name, filepath, description) {
+function writeStatus(name, filepath, state, description) {
   const context = `Bundlesize: ${name} (${filepath})`
   return octokit.repos.createStatus({
     owner: repoOwner,
     repo: repoName,
     sha: process.env.GITHUB_SHA,
     context: context,
+    state: state,
     description: description
   })
 }
@@ -527,7 +528,7 @@ async function run() {
     }
 
     for (const file of config.files) {
-      await writeStatus(file.name, file.path, 'Checking...')
+      await writeStatus(file.name, file.path, 'pending', 'Checking...')
     }
 
     // Use the files from the new config but the build instructions fromm the old config
@@ -554,7 +555,7 @@ async function run() {
     console.log('Analysis done. Setting check statuses...')
     for (const comparison of comparisons) {
       const result = `${comparison.old.normal} bytes -> ${comparison.new.normal} bytes (${comparison.old.gzppped} bytes -> ${comparison.new.gzipped} bytes gzipped)`
-      await writeStatus(comparison.name, comparison.path, result)
+      await writeStatus(comparison.name, comparison.path, 'success', result)
     }
   }
   catch (error) {
