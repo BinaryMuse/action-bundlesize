@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const zlib = require('zlib')
-const exec = require('@actions/exec')
+const cp = require('child_process')
 
 module.exports = async function getStats(subDir, skipNotFound = false) {
   const workspaceDir = process.env.GITHUB_WORKSPACE
@@ -17,7 +17,9 @@ module.exports = async function getStats(subDir, skipNotFound = false) {
     }
   }
 
-  await exec.exec(config.build, { cwd: workingDir, })
+  cp.execSync(config.build, {
+    cwd: workingDir
+  })
 
   const statsPromises = config.files.map(async ({path, name}) => {
     const filepath = path.join(workingDir, path)
