@@ -1,13 +1,9 @@
-name: 'Wait'
-description: 'Wait a designated number of milliseconds'
+name: 'Bundlesize'
+description: 'Get info about bundle size changes'
 inputs:
-  milliseconds:  # id of input
-    description: 'number of milliseconds to wait'
+  github_token:
     required: true
-    default: '1000'
-outputs:
-  time: # output will be available to future steps 
-    description: 'The message to output'
+    description: The token provided by GitHub Actions via secrets.GITHUB_TOKEN
 runs:
   using: 'node12'
   main: 'dist/index.js'
