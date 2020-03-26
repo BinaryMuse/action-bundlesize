@@ -494,26 +494,33 @@ const core = __webpack_require__(470)
 const github = __webpack_require__(469)
 const getStats = __webpack_require__(858)
 
+const API_DELAY = 1000
 const workspaceDir = process.env.GITHUB_WORKSPACE
 const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY.split('/')
-console.log('---')
-console.log(process.env.GITHUB_REPOSITORY)
-console.log(repoOwner)
-console.log(repoName)
-console.log(process.env.GITHUB_SHA)
-console.log('---')
 const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
-function writeStatus(name, filepath, state, description) {
-  const context = `Bundlesize: ${name} (${filepath})`
-  return octokit.repos.createStatus({
+async function writeStatus(name, filepath, state, descriptionNormal, descriptionGzipped) {
+  const contextNormal = `💾 ${name} (${filepath})`
+  const contextGzipped = `💾 ${name} (gzipped) (${filepath}.gz)`
+
+  await octokit.repos.createStatus({
     owner: repoOwner,
     repo: repoName,
     sha: process.env.GITHUB_SHA,
-    context: context,
+    context: contextNormal,
     state: state,
-    description: description
+    description: descriptionNormal
   })
+  await new Promise(r => setTimeout(API_DELAY, r))
+  await octokit.repos.createStatus({
+    owner: repoOwner,
+    repo: repoName,
+    sha: process.env.GITHUB_SHA,
+    context: contextGzipped,
+    state: state,
+    description: descriptionGzipped
+  })
+  await new Promise(r => setTimeout(API_DELAY, r))
 }
 
 function getConfig(workingDir) {
@@ -534,10 +541,7 @@ async function run() {
     }
 
     for (const file of config.files) {
-      const out = await writeStatus(file.name, file.path, 'pending', 'Checking...')
-      console.log(">>>>>>>>>")
-      console.log(out)
-      console.log(">>>>>>>>>")
+      await writeStatus(file.name, file.path, 'pending', 'Checking...', 'Checking...')
     }
 
     // Use the files from the new config but the build instructions fromm the old config if it exists
@@ -563,14 +567,34 @@ async function run() {
 
     console.log('Analysis done. Setting check statuses...')
     for (const comparison of comparisons) {
-      const result = `${comparison.old.normal} bytes -> ${comparison.new.normal} bytes (${comparison.old.gzppped} bytes -> ${comparison.new.gzipped} bytes gzipped)`
-      await writeStatus(comparison.name, comparison.path, 'success', result)
+      const changeNormal = `${formatChange(comparison.old.normal, comparison.new.normal)}`
+      const changeGzipped = `${formatChange(comparison.old.gzipped, comparison.new.gzipped)}`
+
+      await writeStatus(comparison.name, comparison.path, 'success', changeNormal, changeGzipped)
+      await new Promise(r => setTimeout(API_DELAY, r))
     }
   }
   catch (error) {
     core.setFailed(error.message);
   }
 }
+
+function formatChange(oldBytes, newBytes) {
+  const diffBytes = newBytes - oldBytes
+  const absDiffBytes = Math.abs(diffBytes)
+  const formatOld = fileSizeIEC(oldBytes)
+  const formatNew = fileSizeIEC(newBytes)
+  const formatDiff = fileSizeIEC(absDiffBytes)
+  const sign = diffBytes >= 0 ? '+' : '-'
+  const changeInPercent = (Math.round(absDiffBytes % oldBytes * 100) / 100).toFixed(2)
+
+  return `${formatOld} → ${formatNew} — ${sign}${formatDiff} / ${sign}${changeInPercent}`
+}
+
+function fileSizeIEC(a,b,c,d,e){
+  return (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2)
+  +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')
+ }
 
 run()
 
