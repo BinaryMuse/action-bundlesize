@@ -512,7 +512,7 @@ async function writeStatus(name, filepath, state, descriptionNormal, description
     state: state,
     description: descriptionNormal
   })
-  await new Promise(r => setTimeout(API_DELAY, r))
+  await new Promise(r => setTimeout(r, API_DELAY))
   await octokit.repos.createStatus({
     owner: repoOwner,
     repo: repoName,
@@ -521,7 +521,7 @@ async function writeStatus(name, filepath, state, descriptionNormal, description
     state: state,
     description: descriptionGzipped
   })
-  await new Promise(r => setTimeout(API_DELAY, r))
+  await new Promise(r => setTimeout(r, API_DELAY))
 }
 
 function getConfig(workingDir) {
@@ -572,7 +572,6 @@ async function run() {
       const changeGzipped = `${formatChange(comparison.old.gzipped, comparison.new.gzipped)}`
 
       await writeStatus(comparison.name, comparison.path, 'success', changeNormal, changeGzipped)
-      await new Promise(r => setTimeout(API_DELAY, r))
     }
   }
   catch (error) {
