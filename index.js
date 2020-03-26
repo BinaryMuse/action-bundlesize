@@ -41,8 +41,8 @@ async function run() {
       await writeStatus(file.name, file.path, 'pending', 'Checking...')
     }
 
-    // Use the files from the new config but the build instructions fromm the old config
-    const oldStats = await getStats(Object.assign({}, config, {build: oldConfig.build}), oldDir)
+    // Use the files from the new config but the build instructions fromm the old config if it exists
+    const oldStats = await getStats(Object.assign({}, config, {build: oldConfig.build || config.build}), oldDir)
     const newStats = await getStats(config, newDir)
 
     const comparisons = Object.keys(newStats).map(path => {
