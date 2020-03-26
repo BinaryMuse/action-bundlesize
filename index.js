@@ -6,12 +6,12 @@ async function run() {
   try {
     const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
-    const oldStats = await getStats('old')
+    const oldStats = await getStats('old', true)
     const newStats = await getStats('new')
 
     const comparisons = Object.keys(newStats).map(path => {
-      const next = oldStats[path]
-      const prev = newStats[path] || { path, name: next.name, size: { normal: 0, gzipped: 0} }
+      const next = newStats[path]
+      const prev = oldStats[path] || { path, name: next.name, size: { normal: 0, gzipped: 0} }
       const change = {
         normal: next.size.normal - prev.size.normal,
         gzipped: next.size.gzipped - prev.size.gzipped

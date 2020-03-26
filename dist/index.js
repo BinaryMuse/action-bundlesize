@@ -793,12 +793,12 @@ async function run() {
   try {
     const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
-    const oldStats = await getStats('old')
+    const oldStats = await getStats('old', true)
     const newStats = await getStats('new')
 
     const comparisons = Object.keys(newStats).map(path => {
-      const next = oldStats[path]
-      const prev = newStats[path] || { path, name: next.name, size: { normal: 0, gzipped: 0} }
+      const next = newStats[path]
+      const prev = oldStats[path] || { path, name: next.name, size: { normal: 0, gzipped: 0} }
       const change = {
         normal: next.size.normal - prev.size.normal,
         gzipped: next.size.gzipped - prev.size.gzipped
@@ -24565,14 +24565,18 @@ const path = __webpack_require__(622)
 const zlib = __webpack_require__(761)
 const exec = __webpack_require__(986)
 
-module.exports = async function getStats(subDir) {
+module.exports = async function getStats(subDir, skipNotFound = false) {
   const workspaceDir = process.env.GITHUB_WORKSPACE
   const workingDir = path.join(workspaceDir, subDir)
   const pj = JSON.parse(fs.readFileSync(path.join(workingDir, 'package.json')))
 
   const config = pj.actionBundlesize
   if (!config) {
-    throw new Error(`No actionBundlesize config found in package.json in ${subDir}`)
+    if (skipNotFound) {
+      return {}
+    } else {
+      throw new Error(`No actionBundlesize config found in package.json in ${subDir}`)
+    }
   }
 
   await exec.exec(config.build, { cwd: workingDir, })

@@ -3,14 +3,18 @@ const path = require('path')
 const zlib = require('zlib')
 const exec = require('@actions/exec')
 
-module.exports = async function getStats(subDir) {
+module.exports = async function getStats(subDir, skipNotFound = false) {
   const workspaceDir = process.env.GITHUB_WORKSPACE
   const workingDir = path.join(workspaceDir, subDir)
   const pj = JSON.parse(fs.readFileSync(path.join(workingDir, 'package.json')))
 
   const config = pj.actionBundlesize
   if (!config) {
-    throw new Error(`No actionBundlesize config found in package.json in ${subDir}`)
+    if (skipNotFound) {
+      return {}
+    } else {
+      throw new Error(`No actionBundlesize config found in package.json in ${subDir}`)
+    }
   }
 
   await exec.exec(config.build, { cwd: workingDir, })
