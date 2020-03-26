@@ -23514,8 +23514,7 @@ module.exports = async function getStats(subDir, skipNotFound = false) {
 }
 
 function getFileSizeInBytes(pathToFile) {
-  const fstats = fs.fstatSync(pathToFile)
-  return fstats.size
+  return fs.statSync(pathToFile).size
 }
 
 async function getGzippedSizeInBytes(pathToFile) {
