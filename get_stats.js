@@ -21,14 +21,14 @@ module.exports = async function getStats(subDir, skipNotFound = false) {
     cwd: workingDir
   })
 
-  const statsPromises = config.files.map(async ({path, name}) => {
-    const filepath = path.join(workingDir, path)
+  const statsPromises = config.files.map(async (file) => {
+    const filepath = path.join(workingDir, file.path)
     const normalSize = getFileSizeInBytes(filepath)
     const gzippedSize = await getGzippedSizeInBytes(filepath)
 
     return {
-      path,
-      name,
+      path: file.path,
+      name: file.name,
       size: {
         normal: normalSize,
         gzipped: gzippedSize
