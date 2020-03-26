@@ -65,31 +65,32 @@ async function run() {
     const oldStats = await getStats(Object.assign({}, config, {build: oldConfig.build || config.build}), oldDir)
     const newStats = await getStats(config, newDir)
 
-    const comparisons = Object.keys(newStats).map(path => {
-      const next = newStats[path]
-      const prev = oldStats[path] || { path, name: next.name, size: { normal: 0, gzipped: 0} }
-      const change = {
-        normal: next.size.normal - prev.size.normal,
-        gzipped: next.size.gzipped - prev.size.gzipped
-      }
+    // const comparisons = config.files.map((file) => {
+    //   // const next = newStats[path]
+    //   const next = newStats.find(s => s.path === file.path)
+    //   const prev = oldStats[path] || { path, name: next.name, size: { normal: 0, gzipped: 0} }
 
-      return {
-        path,
-        name: next.name,
-        old: prev.size,
-        new: next.size,
-        change
-      }
-    })
+    //   return {
+    //     path,
+    //     name: next.name,
+    //     old: prev.size,
+    //     new: next.size
+    //   }
+    // })
 
-    for (const comparison of comparisons) {
-      const changeNormal = `${formatChange(comparison.old.normal, comparison.new.normal)}`
-      const changeGzipped = `${formatChange(comparison.old.gzipped, comparison.new.gzipped)}`
+    /* eslint-disable */
+    // for (const comparison of comparisons) {
+    for (const file of config.files) {
+      const newStat = newStats.find(s => s.path === file.path)
+      let oldStat = oldStats.find(s => s.path === file.path) || { size: { normal: 0, gzipped: 0 } }
 
-      await writeStatus(comparison.name, comparison.path, 'success', changeNormal, changeGzipped)
+      const changeNormal = `${formatChange(oldStat.size.normal, newStat.size.normal)}`
+      const changeGzipped = `${formatChange(oldStat.size.gzipped, newStat.size.gzipped)}`
+
+      await writeStatus(file.name, file.path, 'success', changeNormal, changeGzipped)
     }
-  }
-  catch (error) {
+    /* eslint-enable */
+  } catch (error) {
     core.setFailed(error.message);
   }
 }
@@ -101,9 +102,10 @@ function formatChange(oldBytes, newBytes) {
   const formatNew = fileSizeIEC(newBytes)
   const formatDiff = fileSizeIEC(absDiffBytes)
   const sign = diffBytes >= 0 ? '+' : '-'
-  const changeInPercent = (Math.round(absDiffBytes % oldBytes * 100) / 100).toFixed(2)
+  const changeInPercent = absDiffBytes / oldBytes * 100
+  const percentFormatted = (Math.round(changeInPercent * 100) / 100).toFixed(2)
 
-  return `${formatOld} → ${formatNew} — ${sign}${formatDiff} / ${sign}${changeInPercent}%`
+  return `${formatOld} → ${formatNew} (${sign}${formatDiff} / ${sign}${percentFormatted}%)`
 }
 
 function fileSizeIEC(a,b,c,d,e){

@@ -25,11 +25,12 @@ module.exports = async function getStats(config, workingDir) {
   })
 
   const stats = await Promise.all(statsPromises)
+  return stats
 
-  return stats.reduce((acc, stat) => {
-    acc[stat.path] = stat
-    return acc
-  }, {})
+  // return stats.reduce((acc, stat) => {
+  //   acc[stat.path] = stat
+  //   return acc
+  // }, {})
 }
 
 function getFileSizeInBytes(pathToFile) {
@@ -45,7 +46,7 @@ async function getGzippedSizeInBytes(pathToFile) {
     return 0
   }
 
-  const outFile = pathToFile + '.gz'
+  const outFile = pathToFile + '.gz.bundlesize-temp'
   const gzip = zlib.createGzip()
   const inp = fs.createReadStream(pathToFile)
   const out = fs.createWriteStream(outFile, { emitClose: true })
