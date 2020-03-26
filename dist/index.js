@@ -791,8 +791,7 @@ const getStats = __webpack_require__(858)
 
 async function run() {
   try {
-    const ghToken = core.getInput('github_token')
-    const octokit = new github.GitHub(ghToken)
+    const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
     const oldStats = await getStats('old')
     const newStats = await getStats('new')
