@@ -26,6 +26,7 @@ async function run() {
       }
     })
 
+    console.log('Analysis done. Setting check statuses...')
     for (const comparison of comparisons) {
       const name = `Bundlesize: ${comparison.name} (${comparison.path})`
       // const signNormal = comparison.change.normal >= 0 ? '+' : ''

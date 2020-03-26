@@ -4,6 +4,7 @@ const zlib = require('zlib')
 const cp = require('child_process')
 
 module.exports = async function getStats(subDir, skipNotFound = false) {
+  console.log(`Starting stat analysis for subdir ${subDir}`)
   const workspaceDir = process.env.GITHUB_WORKSPACE
   const workingDir = path.join(workspaceDir, subDir)
   const pj = JSON.parse(fs.readFileSync(path.join(workingDir, 'package.json')))
@@ -11,12 +12,14 @@ module.exports = async function getStats(subDir, skipNotFound = false) {
   const config = pj.actionBundlesize
   if (!config) {
     if (skipNotFound) {
+      console.log('No config found, skipping')
       return {}
     } else {
       throw new Error(`No actionBundlesize config found in package.json in ${subDir}`)
     }
   }
 
+  console.log('Running build command...')
   cp.execSync(config.build, {
     cwd: workingDir
   })
@@ -55,11 +58,13 @@ async function getGzippedSizeInBytes(pathToFile) {
   const out = fs.createWriteStream(outFile, { emitClose: true })
 
   return new Promise((res, rej) => {
+    console.log('Starting gzip analysis...')
     inp.pipe(gzip)
       .pipe(out)
       .on('error', rej)
       .on('close', () => {
         const size = getFileSizeInBytes(outFile)
+        console.log('Done')
         res(size)
       })
   })
