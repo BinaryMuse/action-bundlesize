@@ -14,7 +14,7 @@ async function writeStatus(name, filepath, state, descriptionNormal, description
   const contextNormal = `${name} (${filepath})`
   const contextGzipped = `${name} (gzipped) (${filepath}.gz)`
 
-  await octokit.repos.createStatus({
+  const out1 = await octokit.repos.createStatus({
     owner: repoOwner,
     repo: repoName,
     sha: process.env.GITHUB_SHA,
@@ -22,8 +22,11 @@ async function writeStatus(name, filepath, state, descriptionNormal, description
     state: state,
     description: descriptionNormal
   })
+  console.log('>>>>>>>>>>')
+  console.log(out1)
+  console.log('<<<<<<<<<<')
   await new Promise(r => setTimeout(r, API_DELAY))
-  await octokit.repos.createStatus({
+  const out2 = await octokit.repos.createStatus({
     owner: repoOwner,
     repo: repoName,
     sha: process.env.GITHUB_SHA,
@@ -31,6 +34,9 @@ async function writeStatus(name, filepath, state, descriptionNormal, description
     state: state,
     description: descriptionGzipped
   })
+  console.log('>>>>>>>>>>')
+  console.log(out2)
+  console.log('<<<<<<<<<<')
   await new Promise(r => setTimeout(r, API_DELAY))
 }
 
@@ -76,7 +82,6 @@ async function run() {
       }
     })
 
-    console.log('Analysis done. Setting check statuses...')
     for (const comparison of comparisons) {
       const changeNormal = `${formatChange(comparison.old.normal, comparison.new.normal)}`
       const changeGzipped = `${formatChange(comparison.old.gzipped, comparison.new.gzipped)}`
@@ -98,7 +103,7 @@ function formatChange(oldBytes, newBytes) {
   const sign = diffBytes >= 0 ? '+' : '-'
   const changeInPercent = (Math.round(absDiffBytes % oldBytes * 100) / 100).toFixed(2)
 
-  return `${formatOld} → ${formatNew} — ${sign}${formatDiff} / ${sign}${changeInPercent}`
+  return `${formatOld} → ${formatNew} — ${sign}${formatDiff} / ${sign}${changeInPercent}%`
 }
 
 function fileSizeIEC(a,b,c,d,e){
