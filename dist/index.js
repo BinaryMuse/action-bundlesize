@@ -500,8 +500,9 @@ const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY.split('/')
 const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
 async function writeStatus(name, filepath, state, descriptionNormal, descriptionGzipped) {
-  const contextNormal = `💾 ${name} (${filepath})`
-  const contextGzipped = `💾 ${name} (gzipped) (${filepath}.gz)`
+  descriptionGzipped = descriptionGzipped || descriptionNormal
+  const contextNormal = `${name} (${filepath})`
+  const contextGzipped = `${name} (gzipped) (${filepath}.gz)`
 
   await octokit.repos.createStatus({
     owner: repoOwner,
@@ -541,7 +542,7 @@ async function run() {
     }
 
     for (const file of config.files) {
-      await writeStatus(file.name, file.path, 'pending', 'Checking...', 'Checking...')
+      await writeStatus(file.name, file.path, 'pending', 'Calculating...')
     }
 
     // Use the files from the new config but the build instructions fromm the old config if it exists
