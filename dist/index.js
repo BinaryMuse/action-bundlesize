@@ -496,6 +496,11 @@ const getStats = __webpack_require__(858)
 
 const workspaceDir = process.env.GITHUB_WORKSPACE
 const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY.split('/')
+console.log('---')
+console.log(process.env.GITHUB_REPOSITORY)
+console.log(repoOwner)
+console.log(repoName)
+console.log('---')
 const octokit = new github.GitHub(process.env.GITHUB_TOKEN)
 
 function writeStatus(name, filepath, state, description) {
